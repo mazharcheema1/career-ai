@@ -1,0 +1,17 @@
+# Dependencies — reinstalled with: npm install
+node_modules/
+
+# Your personal CV — contains private info, never commit
+cv.md
+
+# API key — never commit secrets
+config/api-key.txt
+config/
+
+# Generated output files
+output/
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+*.log
