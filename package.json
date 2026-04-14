@@ -4,10 +4,15 @@
   "description": "AI-powered CV & cover letter generator — paste a job description, get a tailored CV and cover letter in seconds.",
   "type": "module",
   "scripts": {
-    "start": "node career-search.mjs",
-    "postinstall": "npx playwright install --with-deps chromium"
+    "start": "node career-search.mjs"
   },
-  "keywords": ["ai", "cv", "cover-letter", "job-search", "gemini"],
+  "keywords": [
+    "ai",
+    "cv",
+    "cover-letter",
+    "job-search",
+    "gemini"
+  ],
   "author": "Mazhar Hussain",
   "license": "MIT",
   "dependencies": {
@@ -15,6 +20,6 @@
     "docx": "^9.6.1",
     "mammoth": "^1.12.0",
     "pdf-parse": "^1.1.1",
-    "playwright": "^1.58.1"
+    "pdfkit": "^0.18.0"
   }
 }

@@ -208,36 +208,81 @@ RULES:
 - Output Markdown only`;
 }
 
-// ─── PDF Generation via Playwright (msedge on Windows, Chromium on Linux) ───────
+// ─── PDF Generation via pdfkit (pure JS — zero browser dependency) ───────────
 
-async function generatePDF(htmlContent, outputPath) {
-  let browser;
-  try {
-    const { chromium } = await import('playwright');
-    // On Windows use the already-installed system Edge (no download needed).
-    // On Linux (Render) use Playwright's downloaded Chromium.
-    const launchOpts = process.platform === 'win32'
-      ? { channel: 'msedge', headless: true }
-      : { headless: true };
-    browser = await chromium.launch(launchOpts);
-    const context = await browser.newContext();
-    const page = await context.newPage();
-    await page.setContent(htmlContent, { waitUntil: 'load' });
-    await page.pdf({
-      path: outputPath,
-      format: 'A4',
-      displayHeaderFooter: false,
-      printBackground: true,
-      margin: { top: '14mm', bottom: '14mm', left: '14mm', right: '14mm' },
-    });
-  } finally {
-    if (browser) await browser.close().catch(() => {});
-  }
-  // Verify the file was actually written and is not empty
-  if (!fs.existsSync(outputPath) || fs.statSync(outputPath).size < 5000) {
-    try { if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath); } catch {}
-    throw new Error('PDF generation failed — file was empty or not created.');
-  }
+async function generatePDF(markdownContent, outputPath) {
+  const { default: PDFDocument } = await import('pdfkit');
+
+  return new Promise((resolve, reject) => {
+    try {
+      const doc = new PDFDocument({ size: 'A4', margin: 50, bufferPages: true });
+      const stream = fs.createWriteStream(outputPath);
+      doc.pipe(stream);
+
+      // ── Render each markdown line ──────────────────────────────────────────
+      const lines = markdownContent.split('\n');
+      let firstLine = true;
+
+      for (const raw of lines) {
+        const line = raw.trim();
+
+        if (!line) {
+          doc.moveDown(0.3);
+          continue;
+        }
+
+        if (line.startsWith('# ')) {
+          if (!firstLine) doc.moveDown(0.4);
+          doc.fontSize(17).font('Helvetica-Bold').fillColor('#111827')
+             .text(line.slice(2), { align: 'left' });
+        } else if (line.startsWith('## ')) {
+          doc.moveDown(0.5);
+          doc.fontSize(11).font('Helvetica-Bold').fillColor('#1d4ed8')
+             .text(line.slice(3).toUpperCase(), { align: 'left' });
+          // underline rule
+          const y = doc.y;
+          doc.moveTo(50, y).lineTo(doc.page.width - 50, y)
+             .strokeColor('#93c5fd').lineWidth(0.5).stroke();
+          doc.moveDown(0.2);
+        } else if (line.startsWith('### ')) {
+          doc.moveDown(0.3);
+          doc.fontSize(10).font('Helvetica-Bold').fillColor('#374151')
+             .text(line.slice(4));
+        } else if (line.startsWith('- ') || line.startsWith('* ')) {
+          doc.fontSize(9).font('Helvetica').fillColor('#374151')
+             .text('• ' + stripBold(line.slice(2)), { indent: 10, lineGap: 1 });
+        } else {
+          // Render line with inline bold support
+          const parts = line.split(/(\*\*[^*]+\*\*)/g);
+          if (parts.length === 1) {
+            doc.fontSize(9).font('Helvetica').fillColor('#374151').text(line, { lineGap: 1 });
+          } else {
+            // Mixed bold/normal — build inline
+            doc.fontSize(9).fillColor('#374151');
+            parts.forEach((p, idx) => {
+              const isBold = p.startsWith('**') && p.endsWith('**');
+              const txt = isBold ? p.slice(2, -2) : p;
+              if (!txt) return;
+              const opts = idx === parts.length - 1
+                ? { continued: false, lineGap: 1 }
+                : { continued: true };
+              doc.font(isBold ? 'Helvetica-Bold' : 'Helvetica').text(txt, opts);
+            });
+          }
+        }
+
+        firstLine = false;
+      }
+
+      doc.end();
+      stream.on('finish', resolve);
+      stream.on('error', reject);
+    } catch(e) { reject(e); }
+  });
+}
+
+function stripBold(text) {
+  return text.replace(/\*\*([^*]+)\*\*/g, '$1');
 }
 
 // ─── Markdown → DOCX ─────────────────────────────────────────────────────────
@@ -1263,10 +1308,8 @@ const server = http.createServer(async (req, res) => {
       let filename;
       if (format === 'pdf') {
         filename = `${slug}.pdf`;
-        const htmlContent = type === 'cl'
-          ? coverLetterToHTML(content, company || '', role || '')
-          : markdownToHTML(content, company || '', role || '');
-        await generatePDF(htmlContent, path.join(OUTPUT_DIR, filename));
+        // generatePDF now takes markdown directly — no browser needed
+        await generatePDF(content, path.join(OUTPUT_DIR, filename));
       } else {
         filename = `${slug}.docx`;
         await markdownToDOCX(content, path.join(OUTPUT_DIR, filename));
