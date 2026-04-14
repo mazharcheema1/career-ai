@@ -18,7 +18,7 @@ const pdfParse = require('pdf-parse');
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const APP_NAME  = 'Career AI';   // ← change the tool name here anytime
-const PORT = 3738;
+const PORT = process.env.PORT || 3738;  // Render sets PORT automatically
 
 // In-memory store for HTML pages being rendered to PDF (avoids temp files)
 const pendingPages = new Map();
@@ -889,8 +889,15 @@ async function exportFile(type, format) {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Export failed');
+    // Trigger browser download — works both locally and on live server
+    const a = document.createElement('a');
+    a.href = '/download/' + encodeURIComponent(data.filename);
+    a.download = data.filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
     statusEl.style.color = '#10b981';
-    statusEl.textContent = '✓ Saved → output/' + data.filename;
+    statusEl.textContent = '✓ Done — check your Downloads folder';
   } catch(e) {
     statusEl.style.color = '#ef4444';
     statusEl.textContent = 'Failed: ' + e.message;
@@ -1277,7 +1284,7 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-server.listen(PORT, '127.0.0.1', () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log('\n  =========================================');
   console.log(`   ${APP_NAME}`);
   console.log('  =========================================');
