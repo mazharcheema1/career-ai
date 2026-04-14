@@ -662,7 +662,6 @@ function getUI(hasCV, hasKey) {
           <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
           Generate ATS CV
         </button>
-        <button onclick="openFolder()" id="outputPathLabel" title="Click to open output folder" style="background:none;border:none;cursor:pointer;font-size:.78rem;color:#6366f1;padding:0;text-decoration:underline;"></button>
       </div>
     </div>
 
@@ -688,8 +687,8 @@ function getUI(hasCV, hasKey) {
       <div class="download-bar" id="cvExportBar" style="display:none">
         <button class="btn btn-success btn-sm" onclick="exportFile('cv','pdf')">⬇ Download PDF</button>
         <button class="btn btn-secondary btn-sm" onclick="exportFile('cv','docx')">⬇ Download Word</button>
-        <button onclick="openFolder()" style="background:none;border:none;cursor:pointer;font-size:.78rem;color:#6366f1;margin-left:8px;padding:0;text-decoration:underline;" title="Open output folder" id="outputFolderBtn"></button>
         <span id="cvExportStatus" style="font-size:.78rem;color:#94a3b8;margin-left:8px"></span>
+        <button id="cvFolderBtn" onclick="showDownloadHelp()" style="display:none;background:none;border:none;cursor:pointer;font-size:.78rem;color:#6366f1;margin-left:10px;padding:0;text-decoration:underline;">📂 Where is my file?</button>
       </div>
 
       <!-- Cover Letter result (shown if generated) -->
@@ -702,6 +701,7 @@ function getUI(hasCV, hasKey) {
           <button class="btn btn-success btn-sm" onclick="exportFile('cl','pdf')">⬇ Download PDF</button>
           <button class="btn btn-secondary btn-sm" onclick="exportFile('cl','docx')">⬇ Download Word</button>
           <span id="clExportStatus" style="font-size:.78rem;color:#94a3b8;margin-left:8px"></span>
+          <button id="clFolderBtn" onclick="showDownloadHelp()" style="display:none;background:none;border:none;cursor:pointer;font-size:.78rem;color:#6366f1;margin-left:10px;padding:0;text-decoration:underline;">📂 Where is my file?</button>
         </div>
       </div>
 
@@ -880,7 +880,9 @@ async function exportFile(type, format) {
   const isCV = type === 'cv';
   const content = document.getElementById(isCV ? 'cvPreview' : 'clPreview').value.trim();
   if (!content) return alert('Nothing to export — generate first.');
-  const statusEl = document.getElementById(isCV ? 'cvExportStatus' : 'clExportStatus');
+  const statusEl   = document.getElementById(isCV ? 'cvExportStatus' : 'clExportStatus');
+  const folderBtn  = document.getElementById(isCV ? 'cvFolderBtn'    : 'clFolderBtn');
+  folderBtn.style.display = 'none';
   statusEl.textContent = 'Generating ' + format.toUpperCase() + '...';
   statusEl.style.color = '#94a3b8';
   try {
@@ -891,7 +893,7 @@ async function exportFile(type, format) {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Export failed');
-    // Trigger browser download — works both locally and on live server
+    // Trigger browser download — file goes to the user's Downloads folder
     const a = document.createElement('a');
     a.href = '/download/' + encodeURIComponent(data.filename);
     a.download = data.filename;
@@ -899,11 +901,28 @@ async function exportFile(type, format) {
     a.click();
     document.body.removeChild(a);
     statusEl.style.color = '#10b981';
-    statusEl.textContent = '✓ Done — check your Downloads folder';
+    statusEl.textContent = '✓ Downloaded: ' + data.filename;
+    folderBtn.style.display = 'inline';
   } catch(e) {
     statusEl.style.color = '#ef4444';
     statusEl.textContent = 'Failed: ' + e.message;
   }
+}
+
+// ── Where is my file? ─────────────────────────────────────────────────────────
+function showDownloadHelp() {
+  const ua = navigator.userAgent;
+  let location = '';
+  if (/iPhone|iPad/.test(ua)) {
+    location = '📱 iPhone/iPad:\nFiles app → Browse → On My iPhone → Downloads';
+  } else if (/Android/.test(ua)) {
+    location = '📱 Android:\nFiles app → Downloads\n(or open your browser menu → Downloads)';
+  } else if (/Mac/.test(ua)) {
+    location = '💻 Mac:\nFinder → Downloads folder\n(or press Cmd+Option+L in Finder)';
+  } else {
+    location = '💻 Windows:\nFile Explorer → This PC → Downloads\n(or press Win + E, then click Downloads on the left)';
+  }
+  alert('📂 Your file has been saved to your Downloads folder.\n\n' + location + '\n\nLook for the filename shown next to the Download button.');
 }
 
 function setStep(n, text, done) {
@@ -1061,16 +1080,8 @@ async function uploadCVFile(input) {
   input.value = '';
 }
 
-// ── Open output folder ────────────────────────────────────────────────────────
-async function openFolder() {
-  try { await fetch('/api/open-folder'); } catch(e) {}
-}
 
 // ── Init ──────────────────────────────────────────────────────────────────────
-const lbl = document.getElementById('outputPathLabel');
-if (lbl) lbl.textContent = '\uD83D\uDCC2 ' + OUTPUT_PATH;
-const folderBtn = document.getElementById('outputFolderBtn');
-if (folderBtn) folderBtn.textContent = '\uD83D\uDCC2 ' + OUTPUT_PATH;
 </script>
 </body>
 </html>`;
