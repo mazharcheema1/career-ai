@@ -208,16 +208,18 @@ RULES:
 - Output Markdown only`;
 }
 
-// ─── PDF Generation via Playwright msedge channel (clean — no headers/footers) ─
+// ─── PDF Generation via Playwright (msedge on Windows, Chromium on Linux) ───────
 
 async function generatePDF(htmlContent, outputPath) {
   let browser;
   try {
-    // Use Playwright with channel:'msedge' — this drives the already-installed
-    // system Edge, so no extra Chromium download is needed. page.pdf() exposes
-    // displayHeaderFooter:false which actually works, unlike the CLI flag.
     const { chromium } = await import('playwright');
-    browser = await chromium.launch({ channel: 'msedge', headless: true });
+    // On Windows use the already-installed system Edge (no download needed).
+    // On Linux (Render) use Playwright's downloaded Chromium.
+    const launchOpts = process.platform === 'win32'
+      ? { channel: 'msedge', headless: true }
+      : { headless: true };
+    browser = await chromium.launch(launchOpts);
     const context = await browser.newContext();
     const page = await context.newPage();
     await page.setContent(htmlContent, { waitUntil: 'load' });
