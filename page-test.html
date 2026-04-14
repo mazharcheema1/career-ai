@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Career AI — CV Generator</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh}
+  .header{background:#1e293b;border-bottom:1px solid #334155;padding:15px 28px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .logo{font-size:1.25rem;font-weight:800;color:#f8fafc;letter-spacing:-0.02em}
+  .logo span{color:#6366f1}
+  .tabs{display:flex;gap:4px;margin-left:auto}
+  .tab{padding:8px 18px;border-radius:8px;cursor:pointer;font-size:0.875rem;color:#94a3b8;border:none;background:transparent;transition:all .15s}
+  .tab:hover{background:#334155;color:#e2e8f0}
+  .tab.active{background:#6366f1;color:#fff;font-weight:600}
+  .main{padding:28px;max-width:1100px;margin:0 auto}
+  .page{display:none}.page.active{display:block}
+  .alert{padding:12px 16px;border-radius:8px;font-size:.875rem;margin-bottom:18px;border:1px solid}
+  .alert-warn{background:#451a03;border-color:#92400e;color:#fbbf24}
+  .alert-ok{background:#064e3b;border-color:#065f46;color:#6ee7b7}
+  .alert-err{background:#450a0a;border-color:#991b1b;color:#fca5a5}
+  .card{background:#1e293b;border:1px solid #334155;border-radius:14px;padding:24px;margin-bottom:20px}
+  .card h2{font-size:1.05rem;font-weight:700;color:#f1f5f9;margin-bottom:4px}
+  .card p.sub{font-size:.8rem;color:#64748b;margin-bottom:16px}
+  label{display:block;font-size:.78rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+  input[type=text],textarea,select{background:#0f172a;border:1px solid #334155;border-radius:8px;padding:11px 14px;color:#e2e8f0;font-size:.9rem;outline:none;width:100%;font-family:inherit}
+  input[type=text]:focus,textarea:focus{border-color:#6366f1}
+  textarea{resize:vertical;line-height:1.55}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+  .field{margin-bottom:14px}
+  .btn{padding:10px 22px;border-radius:8px;font-size:.9rem;font-weight:600;cursor:pointer;border:none;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+  .btn-primary{background:#6366f1;color:#fff}.btn-primary:hover{background:#4f46e5}
+  .btn-primary:disabled{background:#334155;color:#64748b;cursor:not-allowed}
+  .btn-secondary{background:#334155;color:#e2e8f0}.btn-secondary:hover{background:#475569}
+  .btn-success{background:#059669;color:#fff}.btn-success:hover{background:#047857}
+  .btn-sm{padding:7px 14px;font-size:.8rem}
+
+  /* Progress */
+  .steps{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+  .step{padding:5px 14px;border-radius:20px;font-size:.78rem;background:#0f172a;color:#64748b;border:1px solid #1e293b}
+  .step.active{color:#6366f1;border-color:#6366f1}
+  .step.done{color:#10b981;border-color:#10b981}
+  .step.hidden{display:none}
+  .spinner{width:36px;height:36px;border:3px solid #334155;border-top-color:#6366f1;border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .loading{display:none;flex-direction:column;align-items:center;gap:12px;padding:32px}
+  .loading.show{display:flex}
+
+  /* Result */
+  .result{display:none}.result.show{display:block}
+  .cv-preview{background:#0f172a;border:1px solid #334155;border-radius:10px;padding:20px;font-family:Consolas,monospace;font-size:.82rem;line-height:1.65;color:#cbd5e1;white-space:pre-wrap;min-height:700px;max-height:1400px;overflow-y:auto;margin-bottom:14px;resize:vertical}
+  textarea.cv-preview{font-family:'Consolas','Monaco',monospace;resize:vertical;width:100%;box-sizing:border-box}
+  .download-bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+  .section-divider{border:none;border-top:1px solid #334155;margin:18px 0}
+  .section-label{font-size:.78rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px}
+  .cl-result{display:none}.cl-result.show{display:block;margin-top:16px}
+
+  /* Track form */
+  .track-form{background:#0f172a;border:1px solid #334155;border-radius:10px;padding:18px;margin-top:14px;display:none}
+  .track-form.show{display:block}
+  .track-row{display:grid;grid-template-columns:80px 1fr auto;gap:10px;align-items:end}
+
+  /* Pipeline table */
+  .table-wrap{background:#1e293b;border:1px solid #334155;border-radius:12px;overflow:hidden}
+  table{width:100%;border-collapse:collapse}
+  th{padding:10px 14px;text-align:left;font-size:.72rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;background:#0f172a}
+  td{padding:12px 14px;font-size:.875rem;vertical-align:middle;border-top:1px solid #1e293b}
+  tr:hover td{background:#0f172a30}
+  .badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.73rem;font-weight:600;color:#fff}
+  .empty{text-align:center;padding:60px 20px;color:#64748b}
+  .empty h3{color:#94a3b8;font-size:1.05rem;margin-bottom:8px}
+  .source-check{display:flex;align-items:center;gap:7px;font-size:.875rem;color:#94a3b8;cursor:pointer}
+  .source-check input{width:15px;height:15px;cursor:pointer;accent-color:#6366f1}
+
+  /* Upload area */
+  .upload-zone{border:2px dashed #334155;border-radius:10px;padding:18px 14px;margin-bottom:10px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  .upload-zone input[type=file]{display:none}
+  .upload-status{font-size:.83rem;color:#64748b;margin-top:6px;min-height:1.4em}
+  .upload-divider{text-align:center;color:#475569;font-size:.8rem;margin:10px 0;letter-spacing:.05em}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">Career <span>AI</span></div>
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('generate',this)">Generate CV</button>
+    <button class="tab" onclick="showTab('pipeline',this)">My Pipeline</button>
+    <button class="tab" onclick="showTab('settings',this)">Settings</button>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- ── GENERATE CV ── -->
+  <div class="page active" id="page-generate">
+    
+    
+
+    <div class="card">
+      <h2>Generate ATS-Optimised CV</h2>
+      <p class="sub">Paste a job description — Gemini AI will tailor your CV to match the role.</p>
+
+      <div class="row">
+        <div class="field">
+          <label>Company Name</label>
+          <input type="text" id="company" placeholder="e.g. Google">
+        </div>
+        <div class="field">
+          <label>Job Title / Role</label>
+          <input type="text" id="role" placeholder="e.g. Digital Marketing Manager">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Paste Job Description Here</label>
+        <textarea id="jd" rows="14" placeholder="Paste the full job posting text here — the more detail the better.&#10;&#10;Include: responsibilities, requirements, skills, and any keywords from the listing."></textarea>
+      </div>
+
+      <div class="field" style="margin-bottom:16px">
+        <label>Cover Letter</label>
+        <div style="margin-top:4px">
+          <label class="source-check">
+            <input type="checkbox" id="wantCoverLetter" onchange="toggleCLOptions()">
+            Also generate a Cover Letter
+          </label>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+        <button class="btn btn-primary" id="generateBtn" onclick="generate()">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          Generate ATS CV
+        </button>
+      </div>
+    </div>
+
+    <!-- Progress -->
+    <div class="card" id="progressCard" style="display:none">
+      <div class="steps" id="steps">
+        <div class="step active" id="s1">1. Reading job description</div>
+        <div class="step" id="s2">2. AI tailoring your CV</div>
+        <div class="step hidden" id="s3">3. Generating cover letter</div>
+        <div class="step" id="s4">3. Done</div>
+      </div>
+      <div class="loading show" id="loadingSpinner">
+        <div class="spinner"></div>
+        <div id="loadingText" style="font-size:.9rem;color:#94a3b8">Sending to Gemini AI...</div>
+      </div>
+    </div>
+
+    <!-- Result -->
+    <div class="card result" id="resultCard">
+      <div class="alert alert-ok" id="successMsg"></div>
+      <label>Tailored CV — edit before downloading</label>
+      <textarea class="cv-preview" id="cvPreview" spellcheck="false" placeholder="Your tailored CV will appear here..."></textarea>
+      <div class="download-bar" id="cvExportBar" style="display:none">
+        <button class="btn btn-success btn-sm" onclick="exportFile('cv','pdf')">⬇ Download PDF</button>
+        <button class="btn btn-secondary btn-sm" onclick="exportFile('cv','docx')">⬇ Download Word</button>
+        <span id="cvExportStatus" style="font-size:.78rem;color:#94a3b8;margin-left:8px"></span>
+        <button id="cvFolderBtn" onclick="showDownloadHelp()" style="display:none;background:none;border:none;cursor:pointer;font-size:.78rem;color:#6366f1;margin-left:10px;padding:0;text-decoration:underline;">📂 Where is my file?</button>
+      </div>
+
+      <!-- Cover Letter result (shown if generated) -->
+      <div class="cl-result" id="clResult">
+        <hr class="section-divider">
+        <div class="section-label">Cover Letter</div>
+        <label>Cover Letter — edit before downloading</label>
+        <textarea class="cv-preview" id="clPreview" spellcheck="false" placeholder="Your cover letter will appear here..."></textarea>
+        <div class="download-bar" id="clExportBar" style="display:none">
+          <button class="btn btn-success btn-sm" onclick="exportFile('cl','pdf')">⬇ Download PDF</button>
+          <button class="btn btn-secondary btn-sm" onclick="exportFile('cl','docx')">⬇ Download Word</button>
+          <span id="clExportStatus" style="font-size:.78rem;color:#94a3b8;margin-left:8px"></span>
+          <button id="clFolderBtn" onclick="showDownloadHelp()" style="display:none;background:none;border:none;cursor:pointer;font-size:.78rem;color:#6366f1;margin-left:10px;padding:0;text-decoration:underline;">📂 Where is my file?</button>
+        </div>
+      </div>
+
+      <!-- Track application -->
+      <button class="btn btn-secondary btn-sm" style="margin-top:14px" onclick="toggleTrack()">+ Track this application</button>
+      <div class="track-form" id="trackForm">
+        <div class="track-row">
+          <div>
+            <label>Score /5</label>
+            <select id="trackScore">
+              <option>5.0</option><option>4.5</option><option selected>4.0</option>
+              <option>3.5</option><option>3.0</option><option>2.5</option><option>2.0</option>
+            </select>
+          </div>
+          <div>
+            <label>Notes</label>
+            <input type="text" id="trackNotes" placeholder="e.g. Great culture fit, hybrid role">
+          </div>
+          <div>
+            <button class="btn btn-primary btn-sm" onclick="trackApp()">Save to Pipeline</button>
+          </div>
+        </div>
+        <div id="trackMsg" style="margin-top:8px;font-size:.82rem;color:#6ee7b7"></div>
+      </div>
+    </div>
+
+    <div class="alert alert-err" id="errorMsg" style="display:none"></div>
+  </div>
+
+  <!-- ── PIPELINE ── -->
+  <div class="page" id="page-pipeline">
+    <div id="pipelineContent"><div class="empty"><h3>Loading...</h3></div></div>
+  </div>
+
+  <!-- ── SETTINGS ── -->
+  <div class="page" id="page-settings">
+    <div class="card">
+      <h2>Gemini API Key</h2>
+      <p class="sub">Get a free key at <strong>aistudio.google.com</strong> &#8594; Get API Key. Or set the <code>GEMINI_API_KEY</code> environment variable.</p>
+      <div class="field">
+        <label>API Key</label>
+        <input type="text" id="apiKey" placeholder="AIza..." autocomplete="off">
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <button class="btn btn-primary" onclick="saveKey()">Save Key</button>
+        <button class="btn btn-secondary" onclick="checkModels()">Check Available Models</button>
+      </div>
+      <div id="keyMsg" style="margin-top:10px;font-size:.85rem"></div>
+      <div id="modelList" style="margin-top:12px;display:none">
+        <div style="font-size:.78rem;font-weight:600;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Models available for your key:</div>
+        <div id="modelListItems" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Your Base CV</h2>
+      <p class="sub">This is the master CV Gemini uses to create tailored versions. Keep it comprehensive — include all experience, skills, and achievements.</p>
+
+      <div class="upload-zone">
+        <input type="file" id="cvFileInput" accept=".pdf,.docx,.txt,.md" onchange="uploadCVFile(this)">
+        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('cvFileInput').click()">
+          &#8593; Upload File
+        </button>
+        <span style="font-size:.82rem;color:#64748b">Accepts .pdf, .docx, .txt, .md</span>
+      </div>
+      <div class="upload-status" id="uploadStatus"></div>
+
+      <div class="upload-divider">&#8212; OR &#8212;</div>
+
+      <div class="field">
+        <label>Base CV (Markdown or plain text)</label>
+        <textarea id="cvInput" rows="18" placeholder="# Your Name&#10;email@example.com | Phone | Location&#10;&#10;## Professional Summary&#10;..."></textarea>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px">
+        <button class="btn btn-primary" onclick="saveCV()">Save CV</button>
+        <span id="cvMsg" style="font-size:.85rem;color:#64748b"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Server-injected config
+const OUTPUT_PATH = "C:\\Users\\Mazhar\\career-ai\\output";
+const APP_NAME    = "Career AI";
+
+// State
+let currentCompany = '', currentRole = '';
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+function showTab(tab, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('page-' + tab).classList.add('active');
+  if (tab === 'pipeline') loadPipeline();
+  if (tab === 'settings') loadSettings();
+}
+
+// ── Cover Letter toggle ───────────────────────────────────────────────────────
+function toggleCLOptions() {
+  const want = document.getElementById('wantCoverLetter').checked;
+  document.getElementById('s3').classList.toggle('hidden', !want);
+  document.getElementById('s4').textContent = want ? '4. Done' : '3. Done';
+}
+
+// ── Generate ──────────────────────────────────────────────────────────────────
+async function generate() {
+  const company = document.getElementById('company').value.trim();
+  const role    = document.getElementById('role').value.trim();
+  const jd      = document.getElementById('jd').value.trim();
+  const wantCL  = document.getElementById('wantCoverLetter').checked;
+  if (!company) return alert('Please enter the company name.');
+  if (!role)    return alert('Please enter the job title / role.');
+  if (!jd)      return alert('Please paste the job description.');
+
+  currentCompany = company; currentRole = role;
+  document.getElementById('generateBtn').disabled = true;
+  document.getElementById('progressCard').style.display = 'block';
+  document.getElementById('resultCard').classList.remove('show');
+  document.getElementById('clResult').classList.remove('show');
+  document.getElementById('cvExportBar').style.display = 'none';
+  document.getElementById('clExportBar').style.display = 'none';
+  document.getElementById('errorMsg').style.display = 'none';
+  setStep(1);
+
+  try {
+    setStep(2, APP_NAME + ' is tailoring your CV...');
+    const res = await fetch('/api/generate-cv', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ company, role, jobDescription: jd, coverLetter: wantCL })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Generation failed');
+
+    if (wantCL) {
+      setStep(3, 'Generating cover letter...');
+      await new Promise(r => setTimeout(r, 200));
+    }
+
+    setStep(4, 'Done!', true);
+
+    document.getElementById('successMsg').textContent =
+      '&#10003; CV tailored for ' + role + ' at ' + company;
+    document.getElementById('cvPreview').value = data.markdown || '';
+    document.getElementById('cvExportBar').style.display = 'flex';
+
+    // Cover Letter result
+    if (wantCL) {
+      if (data.clError) {
+        document.getElementById('clPreview').value = 'Cover letter generation failed: ' + data.clError;
+        document.getElementById('clResult').classList.add('show');
+      } else if (data.clMarkdown) {
+        document.getElementById('clPreview').value = data.clMarkdown;
+        document.getElementById('clExportBar').style.display = 'flex';
+        document.getElementById('clResult').classList.add('show');
+      }
+    }
+
+    document.getElementById('resultCard').classList.add('show');
+    document.getElementById('progressCard').style.display = 'none';
+    document.getElementById('resultCard').scrollIntoView({ behavior: 'smooth' });
+
+  } catch (e) {
+    document.getElementById('progressCard').style.display = 'none';
+    document.getElementById('errorMsg').textContent = 'Error: ' + e.message;
+    document.getElementById('errorMsg').style.display = 'block';
+  } finally {
+    document.getElementById('generateBtn').disabled = false;
+  }
+}
+
+// ── Export File ───────────────────────────────────────────────────────────────
+async function exportFile(type, format) {
+  const isCV = type === 'cv';
+  const content = document.getElementById(isCV ? 'cvPreview' : 'clPreview').value.trim();
+  if (!content) return alert('Nothing to export — generate first.');
+  const statusEl   = document.getElementById(isCV ? 'cvExportStatus' : 'clExportStatus');
+  const folderBtn  = document.getElementById(isCV ? 'cvFolderBtn'    : 'clFolderBtn');
+  folderBtn.style.display = 'none';
+  statusEl.textContent = 'Generating ' + format.toUpperCase() + '...';
+  statusEl.style.color = '#94a3b8';
+  try {
+    const res = await fetch('/api/export', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, format, content, company: currentCompany, role: currentRole })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Export failed');
+    // Trigger browser download — file goes to the user's Downloads folder
+    const a = document.createElement('a');
+    a.href = '/download/' + encodeURIComponent(data.filename);
+    a.download = data.filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    statusEl.style.color = '#10b981';
+    statusEl.textContent = '✓ Downloaded: ' + data.filename;
+    folderBtn.style.display = 'inline';
+  } catch(e) {
+    statusEl.style.color = '#ef4444';
+    statusEl.textContent = 'Failed: ' + e.message;
+  }
+}
+
+// ── Where is my file? ─────────────────────────────────────────────────────────
+function showDownloadHelp() {
+  const ua = navigator.userAgent;
+  let msg = '';
+  if (/iPhone|iPad/.test(ua)) {
+    msg = '📱 iPhone/iPad:
+Files app → Browse → On My iPhone → Downloads';
+  } else if (/Android/.test(ua)) {
+    msg = '📱 Android:
+Files app → Downloads
+(or open your browser menu → Downloads)';
+  } else if (/Mac/.test(ua)) {
+    msg = '💻 Mac:
+Finder → Downloads folder
+(or press Cmd+Option+L in Finder)';
+  } else {
+    msg = '💻 Windows:
+File Explorer → This PC → Downloads
+(or press Win + E, then click Downloads on the left)';
+  }
+  alert('📂 Your file has been saved to your Downloads folder.
+
+' + msg + '
+
+Look for the filename shown next to the Download button.');
+}
+
+function setStep(n, text, done) {
+  // Steps: 1=read, 2=AI, 3=CL (optional), 4=done
+  const order = [1, 2, 3, 4];
+  const pos = order.indexOf(n);
+  for (let idx = 0; idx < order.length; idx++) {
+    const sNum = order[idx];
+    const el = document.getElementById('s' + sNum);
+    if (!el || el.classList.contains('hidden')) continue;
+    el.className = 'step' + (idx < pos ? ' done' : idx === pos ? (done ? ' done' : ' active') : '');
+  }
+  if (text) document.getElementById('loadingText').textContent = text;
+  if (done) document.getElementById('loadingSpinner').classList.remove('show');
+}
+
+// ── Track ─────────────────────────────────────────────────────────────────────
+function toggleTrack() {
+  const f = document.getElementById('trackForm');
+  f.classList.toggle('show');
+}
+async function trackApp() {
+  const score = document.getElementById('trackScore').value;
+  const notes = document.getElementById('trackNotes').value.trim() || '&#8212;';
+  try {
+    const res = await fetch('/api/track', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ company: currentCompany, role: currentRole, score, notes })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    document.getElementById('trackMsg').textContent = '&#10003; Saved as #' + data.num + ' in your pipeline.';
+  } catch (e) {
+    document.getElementById('trackMsg').textContent = 'Error: ' + e.message;
+    document.getElementById('trackMsg').style.color = '#fca5a5';
+  }
+}
+
+// ── Pipeline ──────────────────────────────────────────────────────────────────
+async function loadPipeline() {
+  const c = document.getElementById('pipelineContent');
+  try {
+    const res  = await fetch('/api/pipeline');
+    const data = await res.json();
+    const apps = data.apps || [];
+    if (!apps.length) {
+      c.innerHTML = '<div class="empty"><h3>No applications yet</h3><p>Generate a CV and track it to see it here.</p></div>';
+      return;
+    }
+    c.innerHTML = '<div class="table-wrap"><table><thead><tr>' +
+      '<th>#</th><th>Date</th><th>Company</th><th>Role</th><th>Score</th><th>Status</th><th>Notes</th>' +
+      '</tr></thead><tbody>' + apps.map(a => '<tr>' +
+        '<td style="color:#64748b">' + e(a.num) + '</td>' +
+        '<td style="color:#64748b;font-size:.8rem">' + e(a.date) + '</td>' +
+        '<td><strong>' + e(a.company) + '</strong></td>' +
+        '<td>' + e(a.role) + '</td>' +
+        '<td><span class="badge" style="background:' + scoreCol(a.score) + '">' + e(a.score) + '</span></td>' +
+        '<td><span class="badge" style="background:' + statusCol(a.status) + '">' + e(a.status) + '</span></td>' +
+        '<td style="color:#94a3b8;font-size:.8rem">' + e(a.notes) + '</td>' +
+        '</tr>').join('') + '</tbody></table></div>';
+  } catch(err) {
+    c.innerHTML = '<div class="empty"><h3>Could not load pipeline</h3><p>' + err.message + '</p></div>';
+  }
+}
+
+function scoreCol(s)  { const n=parseFloat(s); return isNaN(n)?'#6b7280':n>=4?'#059669':n>=3?'#d97706':'#dc2626'; }
+function statusCol(s) { return({Evaluated:'#6366f1',Applied:'#3b82f6',Interview:'#f59e0b',Offer:'#10b981',Rejected:'#ef4444',Discarded:'#6b7280',SKIP:'#9ca3af'}[s]||'#6b7280'); }
+function e(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ── Settings ──────────────────────────────────────────────────────────────────
+async function loadSettings() {
+  try {
+    const res  = await fetch('/api/config');
+    const data = await res.json();
+    if (data.apiKey) document.getElementById('apiKey').value = data.apiKey;
+    if (data.cv)     document.getElementById('cvInput').value = data.cv;
+  } catch {}
+}
+async function checkModels() {
+  const msg = document.getElementById('keyMsg');
+  const listDiv = document.getElementById('modelList');
+  const itemsDiv = document.getElementById('modelListItems');
+  msg.innerHTML = '<span style="color:#94a3b8">Fetching available models...</span>';
+  listDiv.style.display = 'none';
+  try {
+    const res = await fetch('/api/list-models');
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    if (!data.models.length) {
+      msg.innerHTML = '<span style="color:#fca5a5">No generateContent models found for this key.</span>';
+      return;
+    }
+    msg.innerHTML = '';
+    itemsDiv.innerHTML = data.models.map(m => {
+      const isFlash = m.includes('flash');
+      const isPro = m.includes('pro');
+      const color = isFlash ? '#059669' : isPro ? '#6366f1' : '#334155';
+      return `<span style="background:${color};color:#fff;padding:3px 10px;border-radius:12px;font-size:.78rem;font-family:monospace">${e(m)}</span>`;
+    }).join('');
+    listDiv.style.display = 'block';
+  } catch(err) {
+    msg.innerHTML = '<span style="color:#fca5a5">Error: ' + e(err.message) + '</span>';
+  }
+}
+
+async function saveKey() {
+  const key = document.getElementById('apiKey').value.trim();
+  if (!key) return alert('Please enter your API key.');
+  try {
+    const res  = await fetch('/api/save-key', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({key}) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    document.getElementById('keyMsg').innerHTML = '<span style="color:#6ee7b7">&#10003; ' + data.message + '</span>';
+    setTimeout(() => location.reload(), 1200);
+  } catch(err) {
+    document.getElementById('keyMsg').innerHTML = '<span style="color:#fca5a5">Error: ' + err.message + '</span>';
+  }
+}
+async function saveCV() {
+  const cv = document.getElementById('cvInput').value.trim();
+  if (!cv) return alert('Please paste your CV first.');
+  try {
+    const res  = await fetch('/api/save-cv', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({cv}) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    document.getElementById('cvMsg').textContent = '&#10003; Saved.';
+    setTimeout(() => { document.getElementById('cvMsg').textContent=''; location.reload(); }, 1500);
+  } catch(err) {
+    document.getElementById('cvMsg').textContent = 'Error: ' + err.message;
+  }
+}
+
+// ── CV File Upload ────────────────────────────────────────────────────────────
+async function uploadCVFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const status = document.getElementById('uploadStatus');
+  status.innerHTML = '<span style="color:#94a3b8">Uploading ' + e(file.name) + '...</span>';
+  try {
+    const formData = new FormData();
+    formData.append('cvFile', file, file.name);
+    const res = await fetch('/api/upload-cv', { method: 'POST', body: formData });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Upload failed');
+    status.innerHTML = '<span style="color:#6ee7b7">&#10003; CV extracted from ' + e(file.name) + ' and saved.</span>';
+    if (data.preview) {
+      document.getElementById('cvInput').value = data.preview;
+    }
+    setTimeout(() => location.reload(), 1800);
+  } catch(err) {
+    status.innerHTML = '<span style="color:#fca5a5">Error: ' + err.message + '</span>';
+  }
+  // Reset so same file can be re-uploaded
+  input.value = '';
+}
+
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+</script>
+
+<footer style="text-align:center;padding:28px 20px 20px;margin-top:40px;border-top:1px solid #1e293b;font-size:.8rem;color:#475569;">
+  Career AI — Made by
+  <a href="https://www.linkedin.com/in/digitalmazharai/" target="_blank" rel="noopener"
+     style="color:#6366f1;text-decoration:none;font-weight:600;">
+    Mazhar Hussain
+  </a>
+  &nbsp;·&nbsp;
+  <a href="https://www.linkedin.com/in/digitalmazharai/" target="_blank" rel="noopener"
+     style="color:#6366f1;text-decoration:none;">
+    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle;margin-right:3px;">
+      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
+    </svg>
+    LinkedIn
+  </a>
+</footer>
+
+</body>
+</html>
