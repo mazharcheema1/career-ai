@@ -914,15 +914,15 @@ function showDownloadHelp() {
   const ua = navigator.userAgent;
   let msg = '';
   if (/iPhone|iPad/.test(ua)) {
-    msg = '📱 iPhone/iPad:\nFiles app → Browse → On My iPhone → Downloads';
+    msg = 'iPhone/iPad:\\nFiles app > Browse > On My iPhone > Downloads';
   } else if (/Android/.test(ua)) {
-    msg = '📱 Android:\nFiles app → Downloads\n(or open your browser menu → Downloads)';
+    msg = 'Android:\\nFiles app > Downloads\\n(or open your browser menu > Downloads)';
   } else if (/Mac/.test(ua)) {
-    msg = '💻 Mac:\nFinder → Downloads folder\n(or press Cmd+Option+L in Finder)';
+    msg = 'Mac:\\nFinder > Downloads folder\\n(or press Cmd+Option+L in Finder)';
   } else {
-    msg = '💻 Windows:\nFile Explorer → This PC → Downloads\n(or press Win + E, then click Downloads on the left)';
+    msg = 'Windows:\\nFile Explorer > This PC > Downloads\\n(or press Win + E, then click Downloads on the left)';
   }
-  alert('📂 Your file has been saved to your Downloads folder.\n\n' + msg + '\n\nLook for the filename shown next to the Download button.');
+  alert('Your file has been saved to your Downloads folder.\\n\\n' + msg + '\\n\\nLook for the filename shown next to the Download button.');
 }
 
 function setStep(n, text, done) {
